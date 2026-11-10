@@ -475,6 +475,11 @@ buildRequest model wallet action =
 
                 nowMillis =
                     Time.posixToMillis model.now + model.virtualTimeOffset
+
+                availableAda =
+                    model.account
+                        |> Maybe.map (\acc -> toFloat acc.lovelace / 1000000)
+                        |> Maybe.withDefault 0
             in
             case ( String.toFloat (String.trim model.form.ada), DateTime.fromInputValue model.tzOffset model.form.deadline ) of
                 ( Nothing, _ ) ->
@@ -486,6 +491,9 @@ buildRequest model wallet action =
                 ( Just ada, Just deadline ) ->
                     if ada < 2 then
                         Err "Lock at least 2 ADA"
+
+                    else if model.account /= Nothing && ada > (availableAda - 0.5) then
+                        Err "Not enough balance to cover the lock amount and transaction fee"
 
                     else if String.isEmpty beneficiary then
                         Err "Enter the beneficiary's address"
