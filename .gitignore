@@ -1,0 +1,72 @@
+# ------------------------------------------------------------------------------
+# Cardano / Scalus / Elm App .gitignore
+# ------------------------------------------------------------------------------
+
+# Operating System & Filesystem
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Tt]humbs.db
+
+# Environment & Credentials
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# SBT & Scala Build Artifacts
+target/
+**/target/
+project/target/
+project/project/target/
+project/project/project/
+.bloop/
+**/.bloop/
+.metals/
+**/.metals/
+.ammonite/
+lib_managed/
+src_managed/
+project/boot/
+.history/
+.cache/
+*.class
+
+# Elm Compiler Artifacts
+elm-stuff/
+**/elm-stuff/
+# Generated compiled JavaScript bundle
+frontend/public/elm.js
+
+# Node.js & Package Managers
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm/
+
+# IDEs & Text Editors
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+*~
+*.bak
+
+# Temporary & Log Files
+*.log
+tmp/
+temp/

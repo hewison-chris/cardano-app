@@ -1,0 +1,14 @@
+{
+  "name": "cardano-vault-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Elm frontend for the Scalus time-locked vault dApp",
+  "scripts": {
+    "build": "elm make src/Main.elm --optimize --output=public/elm.js",
+    "dev": "elm make src/Main.elm --debug --output=public/elm.js"
+  },
+  "devDependencies": {
+    "elm": "^0.19.1-6"
+  }
+}
+
