@@ -32,6 +32,7 @@ lazy val contract = (project in file("contract"))
     )
 
 lazy val backend = (project in file("backend"))
+    .enablePlugins(JavaAppPackaging)
     .dependsOn(contract)
     .settings(
       name := "vault-backend",

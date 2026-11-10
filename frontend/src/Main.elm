@@ -55,6 +55,7 @@ port walletError : (String -> msg) -> Sub msg
 type alias Flags =
     { now : Int
     , tzOffset : Int
+    , apiBaseUrl : String
     }
 
 
@@ -108,6 +109,7 @@ type Role
 
 type alias Model =
     { config : Maybe Config
+    , apiBaseUrl : String
     , wallets : List WalletInfo
     , walletsScanned : Bool
     , wallet : Maybe Wallet
@@ -131,6 +133,7 @@ init flags =
             Time.customZone (negate flags.tzOffset) []
     in
     ( { config = Nothing
+      , apiBaseUrl = flags.apiBaseUrl
       , wallets = []
       , walletsScanned = False
       , wallet = Nothing
@@ -145,7 +148,7 @@ init flags =
       , tzOffset = flags.tzOffset
       , virtualTimeOffset = 0
       }
-    , Cmd.batch [ Api.getConfig GotConfig, Api.getVaults GotVaults, detectWallets () ]
+    , Cmd.batch [ Api.getConfig flags.apiBaseUrl GotConfig, Api.getVaults flags.apiBaseUrl GotVaults, detectWallets () ]
     )
 
 
@@ -216,7 +219,7 @@ update msg model =
                                     , address = first.address
                                     , isDev = True
                                     }
-                                , Api.getAccount first.address GotAccount
+                                , Api.getAccount model.apiBaseUrl first.address GotAccount
                                 )
 
                             [] ->
@@ -268,7 +271,7 @@ update msg model =
                     }
             in
             ( { model | wallet = Just w, account = Nothing, notice = NoNotice }
-            , Api.getAccount dev.address GotAccount
+            , Api.getAccount model.apiBaseUrl dev.address GotAccount
             )
 
         DisconnectClicked ->
@@ -285,10 +288,10 @@ update msg model =
                                 )
 
                             else
-                                ( { model | wallet = Just wallet, account = Nothing }, Api.getAccount wallet.address GotAccount )
+                                ( { model | wallet = Just wallet, account = Nothing }, Api.getAccount model.apiBaseUrl wallet.address GotAccount )
 
                         Nothing ->
-                            ( { model | wallet = Just wallet, account = Nothing }, Api.getAccount wallet.address GotAccount )
+                            ( { model | wallet = Just wallet, account = Nothing }, Api.getAccount model.apiBaseUrl wallet.address GotAccount )
 
                 Err e ->
                     ( { model | notice = Failure (D.errorToString e) }, Cmd.none )
@@ -345,7 +348,7 @@ update msg model =
                     if wallet.isDev then
                         -- Auto-sign using dev account
                         ( { model | stage = Just (Signing action utx) }
-                        , Api.devSign utx.tx wallet.id (\res ->
+                        , Api.devSign model.apiBaseUrl utx.tx wallet.id (\res ->
                             case res of
                                 Ok witness ->
                                     TxSigned witness
@@ -367,7 +370,7 @@ update msg model =
         TxSigned witness ->
             case model.stage of
                 Just (Signing action utx) ->
-                    ( { model | stage = Just (Submitting action utx) }, Api.submit utx.tx witness GotSubmitted )
+                    ( { model | stage = Just (Submitting action utx) }, Api.submit model.apiBaseUrl utx.tx witness GotSubmitted )
 
                 _ ->
                     ( model, Cmd.none )
@@ -408,7 +411,7 @@ update msg model =
             ( { model | notice = NoNotice }, Cmd.none )
 
         FastForward seconds ->
-            ( model, Api.advanceTime seconds GotFastForward )
+            ( model, Api.advanceTime model.apiBaseUrl seconds GotFastForward )
 
         GotFastForward (Ok newTime) ->
             let
@@ -419,7 +422,7 @@ update msg model =
                     newTime - realNow
             in
             ( { model | virtualTimeOffset = offset, notice = NoNotice }
-            , Cmd.batch [ refreshCmd model, Api.getConfig GotConfig ]
+            , Cmd.batch [ refreshCmd model, Api.getConfig model.apiBaseUrl GotConfig ]
             )
 
         GotFastForward (Err e) ->
@@ -428,7 +431,7 @@ update msg model =
         FaucetClicked ->
             case model.wallet of
                 Just wallet ->
-                    ( model, Api.fundAddress wallet.address GotFaucet )
+                    ( model, Api.fundAddress model.apiBaseUrl wallet.address GotFaucet )
 
                 Nothing ->
                     ( model, Cmd.none )
@@ -450,10 +453,10 @@ updateForm model f =
 refreshCmd : Model -> Cmd Msg
 refreshCmd model =
     Cmd.batch
-        [ Api.getVaults GotVaults
+        [ Api.getVaults model.apiBaseUrl GotVaults
         , case model.wallet of
             Just wallet ->
-                Api.getAccount wallet.address GotAccount
+                Api.getAccount model.apiBaseUrl wallet.address GotAccount
 
             Nothing ->
                 Cmd.none
@@ -504,6 +507,7 @@ buildRequest model wallet action =
                     else
                         Ok
                             (Api.buildLock
+                                model.apiBaseUrl
                                 { address = wallet.address
                                 , beneficiary = beneficiary
                                 , lovelace = round (ada * 1000000)
@@ -513,10 +517,10 @@ buildRequest model wallet action =
                             )
 
         Claim vault ->
-            Ok (Api.buildClaim wallet.address vault GotUnsigned)
+            Ok (Api.buildClaim model.apiBaseUrl wallet.address vault GotUnsigned)
 
         Cancel vault ->
-            Ok (Api.buildCancel wallet.address vault GotUnsigned)
+            Ok (Api.buildCancel model.apiBaseUrl wallet.address vault GotUnsigned)
 
 
 describe : Action -> String

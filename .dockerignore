@@ -1,0 +1,14 @@
+target/
+**/target/
+.git
+.bloop
+.metals
+.vscode
+.idea
+node_modules
+**/node_modules
+elm-stuff
+**/elm-stuff
+.env
+.env.*
+

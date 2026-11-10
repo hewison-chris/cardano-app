@@ -13,7 +13,11 @@
     <script>
       const app = Elm.Main.init({
         node: document.getElementById("app"),
-        flags: { now: Date.now(), tzOffset: new Date().getTimezoneOffset() },
+        flags: {
+          now: Date.now(),
+          tzOffset: new Date().getTimezoneOffset(),
+          apiBaseUrl: window.API_BASE_URL || "",
+        },
       });
       VaultWallet.attach(app);
     </script>

@@ -80,27 +80,28 @@ type alias UnsignedTx =
 -- REQUESTS
 
 
-getConfig : (Result String Config -> msg) -> Cmd msg
-getConfig toMsg =
-    Http.get { url = "/api/config", expect = expectJson toMsg configDecoder }
+getConfig : String -> (Result String Config -> msg) -> Cmd msg
+getConfig base toMsg =
+    Http.get { url = endpoint base "/api/config", expect = expectJson toMsg configDecoder }
 
 
-getVaults : (Result String (List Vault) -> msg) -> Cmd msg
-getVaults toMsg =
-    Http.get { url = "/api/vaults", expect = expectJson toMsg (D.list vaultDecoder) }
+getVaults : String -> (Result String (List Vault) -> msg) -> Cmd msg
+getVaults base toMsg =
+    Http.get { url = endpoint base "/api/vaults", expect = expectJson toMsg (D.list vaultDecoder) }
 
 
-getAccount : String -> (Result String Account -> msg) -> Cmd msg
-getAccount address toMsg =
-    post "/api/address" [ ( "address", E.string address ) ] (expectJson toMsg accountDecoder)
+getAccount : String -> String -> (Result String Account -> msg) -> Cmd msg
+getAccount base address toMsg =
+    post base "/api/address" [ ( "address", E.string address ) ] (expectJson toMsg accountDecoder)
 
 
 buildLock :
-    { address : String, beneficiary : String, lovelace : Int, deadline : Int }
+    String
+    -> { address : String, beneficiary : String, lovelace : Int, deadline : Int }
     -> (Result String UnsignedTx -> msg)
     -> Cmd msg
-buildLock req toMsg =
-    post "/api/tx/lock"
+buildLock base req toMsg =
+    post base "/api/tx/lock"
         [ ( "address", E.string req.address )
         , ( "beneficiary", E.string req.beneficiary )
         , ( "lovelace", E.int req.lovelace )
@@ -109,48 +110,48 @@ buildLock req toMsg =
         (expectJson toMsg unsignedDecoder)
 
 
-buildClaim : String -> Vault -> (Result String UnsignedTx -> msg) -> Cmd msg
-buildClaim address vault toMsg =
-    post "/api/tx/claim" (vaultRef address vault) (expectJson toMsg unsignedDecoder)
+buildClaim : String -> String -> Vault -> (Result String UnsignedTx -> msg) -> Cmd msg
+buildClaim base address vault toMsg =
+    post base "/api/tx/claim" (vaultRef address vault) (expectJson toMsg unsignedDecoder)
 
 
-buildCancel : String -> Vault -> (Result String UnsignedTx -> msg) -> Cmd msg
-buildCancel address vault toMsg =
-    post "/api/tx/cancel" (vaultRef address vault) (expectJson toMsg unsignedDecoder)
+buildCancel : String -> String -> Vault -> (Result String UnsignedTx -> msg) -> Cmd msg
+buildCancel base address vault toMsg =
+    post base "/api/tx/cancel" (vaultRef address vault) (expectJson toMsg unsignedDecoder)
 
 
 {-| Send the unsigned transaction and the wallet's witness set; returns the transaction hash.
 -}
-submit : String -> String -> (Result String String -> msg) -> Cmd msg
-submit tx witness toMsg =
-    post "/api/tx/submit"
+submit : String -> String -> String -> (Result String String -> msg) -> Cmd msg
+submit base tx witness toMsg =
+    post base "/api/tx/submit"
         [ ( "tx", E.string tx ), ( "witness", E.string witness ) ]
         (expectJson toMsg (D.field "txHash" D.string))
 
 
 {-| Fast-forward the in-memory emulator clock by `seconds`.
 -}
-advanceTime : Int -> (Result String Int -> msg) -> Cmd msg
-advanceTime seconds toMsg =
-    post "/api/emulator/advance-time"
+advanceTime : String -> Int -> (Result String Int -> msg) -> Cmd msg
+advanceTime base seconds toMsg =
+    post base "/api/emulator/advance-time"
         [ ( "seconds", E.int seconds ) ]
         (expectJson toMsg (D.field "currentTime" intLike))
 
 
 {-| Fund an address with simulated ADA from the emulator faucet.
 -}
-fundAddress : String -> (Result String Float -> msg) -> Cmd msg
-fundAddress address toMsg =
-    post "/api/emulator/fund"
+fundAddress : String -> String -> (Result String Float -> msg) -> Cmd msg
+fundAddress base address toMsg =
+    post base "/api/emulator/fund"
         [ ( "address", E.string address ), ( "ada", E.int 1000 ) ]
         (expectJson toMsg (D.field "fundedAda" D.float))
 
 
 {-| Sign a transaction using a pre-funded test party's private key in emulator mode.
 -}
-devSign : String -> String -> (Result String String -> msg) -> Cmd msg
-devSign tx party toMsg =
-    post "/api/emulator/dev-sign"
+devSign : String -> String -> String -> (Result String String -> msg) -> Cmd msg
+devSign base tx party toMsg =
+    post base "/api/emulator/dev-sign"
         [ ( "tx", E.string tx ), ( "party", E.string party ) ]
         (expectJson toMsg (D.field "witness" D.string))
 
@@ -167,9 +168,25 @@ vaultRef address vault =
     ]
 
 
-post : String -> List ( String, E.Value ) -> Http.Expect msg -> Cmd msg
-post url fields expect =
-    Http.post { url = url, body = Http.jsonBody (E.object fields), expect = expect }
+endpoint : String -> String -> String
+endpoint base path =
+    let
+        trimmed =
+            String.trim base
+    in
+    if String.isEmpty trimmed then
+        path
+
+    else if String.endsWith "/" trimmed then
+        String.dropRight 1 trimmed ++ path
+
+    else
+        trimmed ++ path
+
+
+post : String -> String -> List ( String, E.Value ) -> Http.Expect msg -> Cmd msg
+post base path fields expect =
+    Http.post { url = endpoint base path, body = Http.jsonBody (E.object fields), expect = expect }
 
 
 expectJson : (Result String a -> msg) -> Decoder a -> Http.Expect msg

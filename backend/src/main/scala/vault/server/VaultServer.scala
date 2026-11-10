@@ -39,8 +39,22 @@ object VaultServer extends cask.MainRoutes {
 
     // ------------------------------------------------------------------ helpers
 
+    private val corsHeaders = Seq(
+      "Access-Control-Allow-Origin" -> "*",
+      "Access-Control-Allow-Methods" -> "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers" -> "Content-Type"
+    )
+
     private def json(value: ujson.Value, status: Int = 200): cask.Response[ujson.Value] =
-        cask.Response(value, statusCode = status, headers = Seq("Content-Type" -> "application/json"))
+        cask.Response(
+          value,
+          statusCode = status,
+          headers = Seq("Content-Type" -> "application/json") ++ corsHeaders
+        )
+
+    @cask.route("/api/:subpath*", methods = Seq("options"))
+    def optionsRoute(subpath: Seq[String]): cask.Response[String] =
+        cask.Response("", statusCode = 200, headers = corsHeaders)
 
     /** Turn exceptions into `{"error": "..."}` responses the UI can show. */
     private def handle(body: => ujson.Value): cask.Response[ujson.Value] =
