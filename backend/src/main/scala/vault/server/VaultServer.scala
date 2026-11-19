@@ -96,6 +96,10 @@ object VaultServer extends cask.MainRoutes {
 
     // ------------------------------------------------------------------ api
 
+    @cask.get("/health")
+    def health(): cask.Response[ujson.Value] =
+        json(ujson.Obj("status" -> "ok"))
+
     @cask.get("/api/config")
     def config(): cask.Response[ujson.Value] = handle(service.config)
 

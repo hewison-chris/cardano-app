@@ -34,12 +34,12 @@ RUN apk add --no-cache bash curl
 COPY --from=builder /app/backend/target/universal/stage/ /app/
 
 ENV HOST=0.0.0.0
-ENV PORT=8080
+ENV PORT=10000
 
-EXPOSE 8080
+EXPOSE 10000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8080/api/config || exit 1
+  CMD curl -f http://localhost:${PORT}/health || exit 1
 
 ENTRYPOINT ["/app/bin/vault-backend"]
 
