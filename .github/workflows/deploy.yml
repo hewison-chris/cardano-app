@@ -47,7 +47,7 @@ jobs:
           # Inject BACKEND_URL into index.html if configured in GitHub Actions variables
           if [ -n "$BACKEND_URL" ]; then
             echo "Configuring API Base URL: $BACKEND_URL"
-            sed -i "s|apiBaseUrl: window.API_BASE_URL || \"\"|apiBaseUrl: \"$BACKEND_URL\"|g" frontend/public/index.html
+            sed -i "s#apiBaseUrl: window.API_BASE_URL || \"\"#apiBaseUrl: \"$BACKEND_URL\"#g" frontend/public/index.html
           fi
 
       - name: Setup Pages
