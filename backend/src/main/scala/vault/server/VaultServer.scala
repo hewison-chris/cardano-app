@@ -80,6 +80,20 @@ object VaultServer extends cask.MainRoutes {
     @cask.staticFiles("/static")
     def staticAssets(): String = publicDir.toString
 
+    @cask.get("/:file")
+    def rootStatic(file: String): cask.Response[Array[Byte]] = {
+        val base = publicDir.normalize()
+        val resolved = base.resolve(file).normalize()
+        if resolved.startsWith(base) && Files.isRegularFile(resolved) then
+            val contentType =
+                if file.endsWith(".css") then "text/css"
+                else if file.endsWith(".js") then "application/javascript"
+                else if file.endsWith(".html") then "text/html"
+                else "application/octet-stream"
+            cask.Response(Files.readAllBytes(resolved), headers = Seq("Content-Type" -> contentType))
+        else cask.Response(Array.emptyByteArray, statusCode = 404)
+    }
+
     // ------------------------------------------------------------------ api
 
     @cask.get("/api/config")
